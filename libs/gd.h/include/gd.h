@@ -52,6 +52,7 @@ enum FMOD_RESULT;
 #include "manager_nodes/GJEffectManager.h"
 #include "manager_nodes/MusicDownloadManager.h"
 #include "manager_nodes/ObjectToolbox.h"
+#include "manager_nodes/LocalLevelManager.h"
 
 #include "scroll_nodes/CCContentLayer.h"
 #include "scroll_nodes/CCIndexPath.h"
@@ -99,6 +100,17 @@ enum FMOD_RESULT;
 #include "layers_scenes_transitions_nodes/SetupPulsePopup.h"
 #include "layers_scenes_transitions_nodes/ColorSelectPopup.h"
 #include "layers_scenes_transitions_nodes/MoreOptionsLayer.h"
+#include "layers_scenes_transitions_nodes/KeybindingsLayer.h"
+#include "layers_scenes_transitions_nodes/DrawGridLayer.h"
+#include "layers_scenes_transitions_nodes/CreatorLayer.h"
+#include "layers_scenes_transitions_nodes/LevelSearchLayer.h"
+#include "layers_scenes_transitions_nodes/LevelSelectLayer.h"
+#include "layers_scenes_transitions_nodes/OptionsLayer.h"
+#include "layers_scenes_transitions_nodes/DailyLevelPage.h"
+#include "layers_scenes_transitions_nodes/ChallengesPage.h"
+#include "layers_scenes_transitions_nodes/GauntletSelectLayer.h"
+#include "layers_scenes_transitions_nodes/LeaderboardsLayer.h"
+#include "layers_scenes_transitions_nodes/InfoLayer.h"
 
 #include "audio_nodes/FMODAudioEngine.h"
 #include "audio_nodes/FMODSound.h"
@@ -108,6 +120,7 @@ enum FMOD_RESULT;
 #include "level_nodes/LevelSettingsObject.h"
 #include "level_nodes/SongInfoObject.h"
 #include "level_nodes/ColorAction.h"
+#include "level_nodes/GJMapPack.h"
 
 #include "sprite_nodes/CCSpritePlus.h"
 #include "sprite_nodes/ColorActionSprite.h"
@@ -125,6 +138,7 @@ enum FMOD_RESULT;
 #include "sprite_nodes/SimplePlayer.h"
 #include "sprite_nodes/HardStreak.h"
 #include "sprite_nodes/ColorChannelSprite.h"
+#include "sprite_nodes/TeleportPortalObject.h"
 
 #include "trigger_popups/SetupPickupTriggerPopup.h"
 
@@ -136,6 +150,8 @@ enum FMOD_RESULT;
 #include "other_nodes/PlayerCheckpoint.h"
 #include "other_nodes/PointNode.h"
 #include "other_nodes/UndoObject.h"
+#include "other_nodes/DialogObject.h"
+
 
 #include "GameToolbox.h"
 

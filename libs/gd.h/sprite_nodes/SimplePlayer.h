@@ -10,7 +10,7 @@ namespace gd {
 	class GJRobotSprite;
 	class GJSpiderSprite;
 
-	class SimplePlayer : public cocos2d::CCSprite {
+	class GDH_DLL SimplePlayer : public cocos2d::CCSprite {
 	protected:
 		cocos2d::CCSprite* m_pFirstLayer; // idk a good name for these, theyre not even layers
 		cocos2d::CCSprite* m_pSecondLayer;
@@ -73,6 +73,12 @@ namespace gd {
 			m_bHasGlowOutline = value;
 			updateColors();
 		}
+        
+        // yk what im going to just
+        GJRobotSprite* getRobotSprite() { return m_pRobotSprite; };
+        GJSpiderSprite* getSpiderSprite() { return m_pSpiderSprite; };
+        void setRobotSprite(GJRobotSprite* robot) { m_pRobotSprite = robot; };
+        void setSpiderSprite(GJSpiderSprite* spider) { m_pSpiderSprite = spider; };
 	};
 }
 

@@ -13,7 +13,7 @@ namespace gd {
 	// class AudioEffectsLayer;
 	using AudioEffectsLayer = cocos2d::CCLayerColor;
 	// class GJGroundLayer;
-	class GJGroundLayer : public cocos2d::CCLayer {
+	class GDH_DLL GJGroundLayer : public cocos2d::CCLayer {
 		public:
 			void updateGroundWidth() {
 				reinterpret_cast<void(__thiscall*)(GJGroundLayer*)>(
@@ -22,17 +22,39 @@ namespace gd {
 			}
 	};
 	class GJGameLevel;
-	// class UILayer;
-	using UILayer = cocos2d::CCLayerColor;
+	class GDH_DLL UILayer : public cocos2d::CCLayerColor {
+		public:
+			PAD(8)
+			cocos2d::CCMenu* m_pCheckPointMenu;		// 0x1a0
+
+			void onCheck(CCObject* pSender) {
+				reinterpret_cast<void(__thiscall*)(UILayer*, CCObject*)>(
+					base + 0x25fb60
+				)(this, pSender);
+			}
+
+			void onDeleteCheck(CCObject* pSender) {
+				reinterpret_cast<void(__thiscall*)(UILayer*, CCObject*)>(
+					base + 0x25fc90
+				)(this, pSender);
+			}
+
+			void onPause(CCObject* pSender) {
+				reinterpret_cast<void(__thiscall*)(UILayer*, CCObject*)>(
+					base + 0x25fad0
+				)(this, pSender);
+			}
+	};
+
 	using StartPosObject = gd::GameObject;
 	class CheckpointObject;
 
-	class PlayLayer : public GJBaseGameLayer, public CCCircleWaveDelegate {
+	class GDH_DLL PlayLayer : public GJBaseGameLayer, public CCCircleWaveDelegate {
 		public:
-			PAD(12);
+			PAD(8);
 			unsigned int unk2D8;
 			bool unk2DC;
-			bool m_hasCheated; // 0x2DD by taking less than 30s to beat lvl
+			bool m_bHasCheated; // 0x2DD by taking less than 30s to beat lvl
 			int unk2E0; // random value between 0 and 100 + unk2E8
 			int unk2E4; // random value between 0 and 100
 			int unk2E8;
@@ -107,7 +129,7 @@ namespace gd {
 			bool unk428;
 			bool m_shouldRecordActions; // 0x429 for the hidden rob bot
 			bool unk42A;
-			bool m_isPaused; // 0x42B
+			bool unk42B; // 0x42B
 			bool unk42C;
 			bool m_isPlayer2Frozen; // 0x42D wat
 			std::string m_previousRecords; // 0x430
@@ -152,7 +174,7 @@ namespace gd {
 			PAD(24);
 			double unk508; // time again?
 			PAD(31);
-			bool unk52F; // is paused again?
+			bool m_bIsPaused; // 0x52f
 			GameObject* unk530;
 			bool unk534;
 			bool unk535; // gets set to false when you cheat
@@ -160,6 +182,24 @@ namespace gd {
 			PAD(1);
 
 			static PlayLayer* get() { return GameManager::sharedState()->getPlayLayer(); }
+
+			static PlayLayer* create(GJGameLevel* lvl) {
+				return reinterpret_cast<PlayLayer*(__fastcall*)(GJGameLevel*)>(
+					base + 0x1fb6d0
+				)(lvl);
+			}
+
+			static cocos2d::CCScene* scene(GJGameLevel* lvl) {
+				return reinterpret_cast<cocos2d::CCScene*(__fastcall*)(GJGameLevel*)>(
+					base + 0x1fb690
+				)(lvl);
+			}
+
+			void togglePracticeMode(bool on) {
+				reinterpret_cast<void(__thiscall*)(PlayLayer*, bool)>(
+					base + 0x20d0d0
+				)(this, on);
+			}
 	};
 }
 

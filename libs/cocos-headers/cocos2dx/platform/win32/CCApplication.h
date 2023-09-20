@@ -43,6 +43,7 @@ public:
         virtual int run();
         virtual void setupGLView();
         virtual void platformShutdown();
+        void toggleVerticalSync(bool);
     )
 
     /**
@@ -59,12 +60,14 @@ public:
 
     void setStartupScriptFilename(const std::string& startupScriptFile);
 
+    bool getControllerConnected() const;
+
     const std::string& getStartupScriptFilename(void)
     {
         return m_startupScriptFilename;
     }
 
-protected:
+public:
     HINSTANCE           m_hInstance;
     HACCEL              m_hAccelTable;
     LARGE_INTEGER       m_nAnimationInterval;

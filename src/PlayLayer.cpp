@@ -1,10 +1,22 @@
 // this code is bad, if you want to improve it, create a PR kthx
+// also I just realized this could crash because there arent any checks so technically players could crash other players if they wanted to.
+// I'll do those fixes later, or you could contribute to do those fixes but for now here's the code
 #include "PlayLayer.h"
+
+#include <queue>
+std::queue<sio::message::ptr> dataQueue;
+std::queue<sio::message::ptr> leftQueue;
+std::queue<sio::message::ptr> emptyQueue; // probably a bad idea but idk
+bool checkSocketEvents = false;
 
 int reconnectionDelay = 1000;
 int reconnectionDelayMax = 5000;
 int reconnectionAttempts = 0;
-int renderDist = 300;
+int renderDist = 1000;
+
+constexpr int PLAYERSID = 9998;
+int myTag = 0;
+
 // -------------------------------------------- //
 bool connect_finish = false;
 std::mutex lock;
@@ -14,12 +26,7 @@ HANDLE hThread;
 sio::socket::ptr current_socket;
 int current_level_id = NULL;
 
-// performance reasons, this is so it doesnt update players outside the players screen
-float calculateDist(float x1, float y1, float x2, float y2) {
-    // sqrt((x1-y1)^2 + (x2-y2)^2))
-    return sqrt(pow(x1-y1, 2) + pow(x2-y2, 2));
-}
-
+// alk dont say anything about this ok, this is old code
 namespace ConnectionHandler {
     void onSuccess() {
         std::cout << "Connection successful!" << std::endl;
@@ -43,10 +50,8 @@ bool PlayLayer::join() {
     if (current_level_id == NULL) {
         current_level_id = 1;
     }
-    std::cout << "emitting join" << std::endl;
     //object->get_map()["level"] = sio::string_message::create(std::to_string(current_level_id));
     current_socket->emit("join", std::to_string(current_level_id));
-    std::cout << "emitted join" << std::endl;
     return true;
 }
 
@@ -58,7 +63,7 @@ int playerTypeToModeID(gd::PlayerObject* player) {
     // 1 = Ship
     // 2 = Ball
     // 3 = UFO (Bird)
-    // 4 = Wave
+    // 4 = Wave (Dart)
     // 5 = Robot
     // 6 = Spider
 
@@ -92,106 +97,240 @@ gd::IconType intToEnum(int gamemodeID) {
     }
 }
 
-void updatePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
-    auto objsLayer = reinterpret_cast<CCLayer*>(self->getChildren()->objectAtIndex(3));
+// probably a bad way of doing this but too lazy to impl PlayerObject
+gd::SimplePlayer* renderDome(int cubeID, int ufoID) {
+    auto domePlayer = gd::SimplePlayer::create(1);
+    domePlayer->updatePlayerFrame(ufoID, gd::IconType::kIconTypeUfo);
+    auto player = gd::SimplePlayer::create(cubeID);
+    player->setScale(0.55F);
+    player->setPositionY(5);
+    domePlayer->addChild(player);
+    return domePlayer;
+}
+
+// Removes a player if they left.
+void removePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
+    if (myTag == 0) return;
+    auto objsLayer = static_cast<CCNode*>(self->getChildren()->objectAtIndex(3));
+    if (objsLayer == nullptr) return;
+    auto playersNode = objsLayer->getChildByTag(PLAYERSID);
+    if (playersNode == nullptr) return;
     int tag = (int)data->get_map()["tag"]->get_int();
+    if (tag == myTag) return; // no need to update based on that
+    auto getPlayerObj = playersNode->getChildByTag(tag);
+    if (getPlayerObj == nullptr) return;
+    if (getPlayerObj != nullptr) {
+        std::cout << "Removed Player " << tag << std::endl;
+        playersNode->removeChildByTag(tag); // player has left, so we remove it to clean up.
+    }
+}
+
+// Updates the other players positions
+// TODO: Create "buffering" or client-side interpolation for the player positioning
+// Possibly use PlayerObject with a scheduler running (or CCAction) to mimic as if it were another player
+// This would "reduce latency" and make the movement look smoother.
+void updatePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
+    if (myTag == 0) return;
+    auto objsLayer = static_cast<CCNode*>(self->getChildren()->objectAtIndex(3));
+    if (objsLayer == nullptr) return;
+    auto playersNode = objsLayer->getChildByTag(PLAYERSID);
+    if (playersNode == nullptr) return;
+    //auto objsLayer = self->m_pPlayer1->getParent()->getParent(); // more reliable ig
+    int tag = (int)data->get_map()["tag"]->get_int();
+    if (tag == myTag) return; // no need to update based on that
     double x = data->get_map()["x"]->get_double();
     double y = data->get_map()["y"]->get_double();
     double rot = data->get_map()["rotation"]->get_double();
     double scale = data->get_map()["scale"]->get_double();
-    int gamemodeID = (int)data->get_map()["gamemode"]->get_int();
-    auto getPlayerObj = objsLayer->getChildByTag(tag);
+    bool flipped = data->get_map()["flip"]->get_bool();
+    int gamemodeID = data->get_map()["gamemode"]->get_int();
 
-    float pX = self->m_pPlayer1->getPositionX();
-    float pY = self->m_pPlayer2->getPositionY();
+    int cubeIcon = data->get_map()["cube"]->get_int();
+    int shipIcon = data->get_map()["ship"]->get_int();
+    int ballIcon = data->get_map()["ball"]->get_int();
+    int ufoIcon = data->get_map()["ufo"]->get_int();
+    int waveIcon = data->get_map()["wave"]->get_int();
+    int robotIcon = data->get_map()["robot"]->get_int();
+    int spiderIcon = data->get_map()["spider"]->get_int();
 
-    float calcDistance = calculateDist(pX, pY, (float)x, (float)y);
-    // If the code below is false, dont update the players position as to prevent lag (even though this wouldnt even cause lag at all)
-    if (calcDistance <= renderDist) {
-        if (getPlayerObj != NULL) {
-            //getPlayerObj->updatePlayerFrame(1, gd::kIconTypeBall);
-            //getPlayerObj->updatePlayerFrame(1, intToEnum(gamemodeID));
-            std::cout << "updating player frame" << std::endl;
-            auto player = reinterpret_cast<gd::SimplePlayer*>(getPlayerObj->getChildren()->objectAtIndex(0));
-            std::cout << gamemodeID << std::endl;
-            player->updatePlayerFrame(1, intToEnum(gamemodeID));
-            getPlayerObj->setPosition(ccp(x, y));
-            getPlayerObj->setRotation((float)rot);
-            getPlayerObj->setScale((float)scale);
-        } else {
-            std::cout << "player not found, creating new one" << std::endl;
-            CCNode* playersObj = CCNode::create();
-            playersObj->setTag(tag);
-            gd::SimplePlayer* player = gd::SimplePlayer::create(1);
-            player->updatePlayerFrame(1, intToEnum(gamemodeID));
-            playersObj->addChild(player);
-            playersObj->setPosition(ccp(x, y));
-            playersObj->setRotation((float)rot);
-            playersObj->setScale((float)scale);
-            objsLayer->addChild(playersObj);
-            std::cout << "Player created" << std::endl;
+    auto col1 = data->get_map()["col1"]->get_vector();
+    auto col2 = data->get_map()["col2"]->get_vector();
+    bool glow = data->get_map()["glow"]->get_bool();
+
+    int iconFrame = 1;
+    switch (gamemodeID) {
+        case 0: // cube
+            iconFrame = cubeIcon;
+            break;
+        case 1: // ship
+            iconFrame = shipIcon;
+            break;
+        case 2: // ball
+            iconFrame = ballIcon;
+            break;
+        case 3: // ufo
+            iconFrame = ufoIcon;
+            break;
+        case 4: // wave
+            iconFrame = waveIcon;
+            break;
+        case 5: // robot
+            iconFrame = robotIcon;
+            break;
+        case 6: // spider
+            iconFrame = spiderIcon;
+            break;
+    }
+
+    auto getPlayerObj = playersNode->getChildByTag(tag);
+
+    // TODO: do render distance
+    //float pX = self->m_pPlayer1->getPositionX();
+    //float pY = self->m_pPlayer2->getPositionY();
+    if (getPlayerObj == nullptr && y <= -100) return;
+    // Player exists, continue updating it.
+    if (getPlayerObj != nullptr) {
+        if (y <= -100) { // player has left
+            playersNode->removeChildByTag(tag);
+            return;
         }
+        auto player = static_cast<gd::SimplePlayer*>(getPlayerObj->getChildren()->objectAtIndex(0));
+        player->updatePlayerFrame(iconFrame, intToEnum(gamemodeID));
+        getPlayerObj->setPosition(ccp(x, y));
+        player->setRotation((float)rot);
+        player->setScale((float)scale);
+        if (flipped) { // setFlipY not working sadge
+            player->setScaleY(-player->getScaleX());
+        }
+
+        if (!col1.empty() && col1.size() >= 3) {
+            ccColor3B color1;
+            color1.r = col1[0]->get_int();
+            color1.g = col1[1]->get_int();
+            color1.b = col1[2]->get_int();
+            player->setColor(color1);
+        }
+        if (!col2.empty() && col2.size() >= 3) {
+            ccColor3B color2;
+            color2.r = col2[0]->get_int();
+            color2.g = col2[1]->get_int();
+            color2.b = col2[2]->get_int();
+            player->setSecondColor(color2);
+        }
+        auto smallerPlayer = static_cast<gd::SimplePlayer*>(player->getChildren()->objectAtIndex(2));
+        if (smallerPlayer != nullptr) {
+            smallerPlayer->setVisible((gamemodeID == 1 || gamemodeID == 3));
+            if (gamemodeID == 1) { // Ship
+                smallerPlayer->setPositionY(10);
+                player->setPositionY(-5);
+            } else {
+                smallerPlayer->setPositionY(6);
+                player->setPositionY(0);
+            }
+        }
+        
+        if (gamemodeID == 5) { // Robot
+            auto robot = player->getRobotSprite();
+            robot->runAnimation("run");
+            robot->updateTweenAction(0.2F, "run");
+            player->setRobotSprite(robot); // this will probably crash LOL
+        }
+        if (gamemodeID == 6) { // Spider
+            auto spider = player->getSpiderSprite();
+            spider->runAnimation("run");
+            spider->updateTweenAction(0.2F, "run");
+            player->setSpiderSprite(spider);
+        }
+        player->setGlowOutline(glow);
+    } else { // Player doesn't exist, create a new one.
+        std::cout << "Creating new player." << std::endl;
+        CCNode* playersObj = CCNode::create();
+        playersObj->setTag(tag);
+        gd::SimplePlayer* player = gd::SimplePlayer::create(iconFrame);
+        auto userNameID = CCLabelBMFont::create(std::to_string(tag).c_str(), "bigFont.fnt");
+        userNameID->setScale(0.5F);
+        userNameID->setPositionY(20.0F);
+        player->updatePlayerFrame(iconFrame, intToEnum(gamemodeID));
+
+        auto smallerPlayer = gd::SimplePlayer::create(1);
+        smallerPlayer->updatePlayerFrame(cubeIcon, gd::IconType::kIconTypeCube);
+        smallerPlayer->setScale(0.55F);
+        smallerPlayer->setPositionY(5);
+        smallerPlayer->setVisible(false);
+        player->addChild(smallerPlayer);
+
+        if (!col1.empty() && col1.size() >= 3) {
+            ccColor3B color1;
+            color1.r = col1[0]->get_int();
+            color1.g = col1[1]->get_int();
+            color1.b = col1[2]->get_int();
+            player->setColor(color1);
+            smallerPlayer->setColor(color1);
+        }
+        if (!col2.empty() && col2.size() >= 3) {
+            ccColor3B color2;
+            color2.r = col2[0]->get_int();
+            color2.g = col2[1]->get_int();
+            color2.b = col2[2]->get_int();
+            player->setSecondColor(color2);
+            smallerPlayer->setSecondColor(color2);
+        }
+        player->setGlowOutline(glow);
+        smallerPlayer->setGlowOutline(glow);
+        playersObj->addChild(player);
+        playersObj->setPosition(ccp(x, y));
+        player->setRotationX((float)rot);
+        player->setScale((float)scale);
+        if (flipped) {
+            player->setScaleY(-player->getScaleX());
+        }
+        playersObj->addChild(userNameID);
+        
+        playersNode->addChild(playersObj);
+        // probably will switch to a switch statement later on
+        // TODO: -6px for ship (do not change smallerPlayer)
+        if (gamemodeID == 1 || gamemodeID == 3) { // Ship + UFO
+            smallerPlayer->setVisible(true);
+            if (gamemodeID == 1) { // Ship
+                smallerPlayer->setPositionY(10);
+                player->setPositionY(-5);
+            }
+        }
+        if (gamemodeID == 5) { // Robot
+            auto robot = player->getRobotSprite();
+            robot->runAnimation("run");
+            robot->updateTweenAction(0.2F, "run");
+            player->setRobotSprite(robot); // this will probably crash LOL
+        }
+        if (gamemodeID == 6) { // Spider
+            auto spider = player->getSpiderSprite();
+            spider->runAnimation("run");
+            spider->updateTweenAction(0.2F, "run");
+            player->setSpiderSprite(spider);
+        }
+        std::cout << "Player created" << std::endl;
     }
 }
 
 bool PlayLayer::setSocket(gd::PlayLayer* self, sio::socket::ptr sock) {
     current_socket = sock;
-    //auto player = self->getChildByTag(3982);
-    //auto player = static_cast<CCSprite*>(self->getChildByTag(3982));
-    /*auto playersObj = reinterpret_cast<CCNode*>(self->getChildren()->objectAtIndex(4));
-    std::cout << playersObj->getChildrenCount() << std::endl;
-    std::cout << "---" << std::endl;
-    auto player = reinterpret_cast<CCSprite*>(playersObj->getChildren()->objectAtIndex(0));*/
-    std::cout << self->getChildrenCount() << std::endl;
     PlayLayer::join();
     std::cout << "listening for events" << std::endl;
-    std::cout << self->getChildrenCount() << std::endl;
-    std::cout << self << std::endl;
     current_socket->on("update", sio::socket::event_listener_aux([&](std::string const& user, sio::message::ptr const& data, bool isAck, sio::message::list &ack_resp) {
-        /*auto objsLayer = reinterpret_cast<CCLayer*>(self->getChildren()->objectAtIndex(3));
-        int tag = (int)data->get_map()["tag"]->get_int();
-        double x = data->get_map()["x"]->get_double();
-        double y = data->get_map()["y"]->get_double();
-        double rot = data->get_map()["rotation"]->get_double();
-        auto getPlayerObj = objsLayer->getChildByTag(tag);
-        if (getPlayerObj != NULL) {
-            getPlayerObj->setPosition(ccp(x, y));
-            getPlayerObj->setRotation((float)rot);
-        } else {
-            std::cout << "player not found, creating new one" << std::endl;
-            CCNode* playersObj = CCNode::create();
-            playersObj->setTag(tag);
-            CCSprite* player = gd::SimplePlayer::create(1);
-            playersObj->addChild(player);
-            playersObj->setPosition(ccp(x, y));
-            playersObj->setRotation((float)rot);
-            objsLayer->addChild(playersObj);
-            std::cout << "Player created" << std::endl;
-        }*/
-        updatePlayer(self, data);
+        if (!checkSocketEvents) return;
+        dataQueue.push(data);
     }));
-    
-    current_socket->on("player", sio::socket::event_listener_aux([&](std::string const& user, sio::message::ptr const& data, bool isAck, sio::message::list &ack_resp) {
-        /*int tag = (int)data->get_map()["tag"]->get_int();
-        double x = data->get_map()["x"]->get_double();
-        double y = data->get_map()["y"]->get_double();
-        double rot = data->get_map()["rotation"]->get_double();
-        auto objsLayer = reinterpret_cast<CCLayer*>(self->getChildren()->objectAtIndex(3));
-        auto player = objsLayer->getChildByTag(tag);
-        if (player != NULL) {
-            player->setPosition(ccp(x, y));
-            player->setRotation((float)rot);
-        } else {
-            // create the player
-            CCNode* playersObj = CCNode::create();
-            playersObj->setTag(tag);
-            CCSprite* player = gd::SimplePlayer::create(1);
-            playersObj->addChild(player);
-            objsLayer->addChild(playersObj);
-            std::cout << "Player Joined" << std::endl;
-        }*/
-        updatePlayer(self, data);
+    current_socket->on("left", sio::socket::event_listener_aux([&](std::string const& user, sio::message::ptr const& data, bool isAck, sio::message::list &ack_resp) {
+        std::cout << "add to left queue" << std::endl;
+        leftQueue.push(data);
     }));
+    current_socket->on("tag", sio::socket::event_listener_aux([&](std::string const& user, sio::message::ptr const& data, bool isAck, sio::message::list &ack_resp) {
+        myTag = data->get_int();
+        std::cout << "Updated Current Tag to " << myTag << std::endl;
+    }));
+    /*current_socket->on("player", sio::socket::event_listener_aux([&](std::string const& user, sio::message::ptr const& data, bool isAck, sio::message::list &ack_resp) {
+        dataQueue.push(data);
+    }));*/
     return true;
 }
 
@@ -208,9 +347,8 @@ DWORD WINAPI start_socket(void* self) {
     if (!connect_finish) {
         cond.wait(unique_lock);
     }
-    std::cout << "started socket" << std::endl;
+    std::cout << "Started socket" << std::endl;
     sock.socket()->on_error(ConnectionHandler::onError);
-    std::cout << "set socket" << std::endl;
     PlayLayer::setSocket((gd::PlayLayer*)self, sock.socket());
     while (true) {
         Sleep(1000); // this code is for some reason the reason why the socket client still runs, even though it looks very wrong
@@ -218,34 +356,101 @@ DWORD WINAPI start_socket(void* self) {
     return true;
 }
 
+
 // Nothing special here
 bool __fastcall PlayLayer::hook(gd::PlayLayer* self, int, gd::GJGameLevel* level) {
     bool result = init(self, level);
     connect_finish = false;
+    checkSocketEvents = true;
     current_socket = sio::socket::ptr();
-    current_level_id = level->levelID;
+    current_level_id = level->m_nLevelID;
     auto director = cocos2d::CCDirector::sharedDirector();
     auto size = director->getWinSize();
-    // probably couldve also used pthread
+
+    auto playersNode = CCNode::create();
+    playersNode->setTag(PLAYERSID); // stores all players
+    playersNode->setPosition({0, 0});
+    auto objsLayer = static_cast<CCNode*>(self->getChildren()->objectAtIndex(3));
+    objsLayer->addChild(playersNode);
+
     hThread = CreateThread(NULL, 0, start_socket, (void*)self, 0, NULL);
     return result;
 }
 
+void processEvent(gd::PlayLayer* self) {
+    if (!leftQueue.empty()) {
+        std::cout << "step 1" << std::endl;
+        auto data = leftQueue.front();
+        leftQueue.pop();
+        removePlayer(self, data);
+    }
+    if (!dataQueue.empty()) {
+        auto data = dataQueue.front();
+        dataQueue.pop();
+        updatePlayer(self, data);
+    }
+}
+
 // Emits player data (such as position, rotation, gamemode, scale, etc)
 bool __fastcall PlayLayer::hookUpdate(gd::PlayLayer* self, float dt) {
-    bool result = update(self, dt);
-    if (!current_socket) return result;
+    bool ret = update(self, dt);
+    if (!current_socket) return ret;
+    auto objsLayer = static_cast<CCNode*>(self->getChildren()->objectAtIndex(3));
+    if (objsLayer != nullptr) { // so many nullptr checks
+        auto getPlayersNode = objsLayer->getChildByTag(PLAYERSID);
+        if (getPlayersNode != nullptr) {
+            // the reason why im doing this is because robs "effects" mess up the whole players
+            getPlayersNode->setPosition({0, 0});
+            getPlayersNode->setRotation(0);
+            getPlayersNode->setScale(1.0F);
+            getPlayersNode->setSkewX(0);
+            getPlayersNode->setSkewY(0);
+        }
+    }
+    if (!checkSocketEvents) { // This fixes the issue where if you unpause, but another player is paused, you wont be able to see their "latest position"
+        std::cout << "Getting all other players positions" << std::endl;
+        current_socket->emit("receive");
+    }
+    checkSocketEvents = true;
     sio::message::ptr object = sio::object_message::create();
+
+    // Position, Rotation, Scale
     object->get_map()["x"] = sio::double_message::create(self->m_pPlayer1->getPositionX());
     object->get_map()["y"] = sio::double_message::create(self->m_pPlayer1->getPositionY());
     object->get_map()["rotation"] = sio::double_message::create(self->m_pPlayer1->getRotationX());
     object->get_map()["gamemode"] = sio::int_message::create(playerTypeToModeID(self->m_pPlayer1));
     object->get_map()["scale"] = sio::double_message::create(self->m_pPlayer1->getScaleX());
+    object->get_map()["flip"] = sio::bool_message::create((self->m_pPlayer1->getScaleY() < 0));
+
+    // Gamemode Icons
+    auto gm = gd::GameManager::sharedState();
+    object->get_map()["cube"] = sio::int_message::create(gm->getPlayerFrame());
+    object->get_map()["ship"] = sio::int_message::create(gm->getPlayerShip());
+    object->get_map()["ball"] = sio::int_message::create(gm->getPlayerBall());
+    object->get_map()["ufo"] = sio::int_message::create(gm->getPlayerBird());
+    object->get_map()["wave"] = sio::int_message::create(gm->getPlayerDart());
+    object->get_map()["robot"] = sio::int_message::create(gm->getPlayerRobot());
+    object->get_map()["spider"] = sio::int_message::create(gm->getPlayerSpider());
+
+    auto colorArray = [](const ccColor3B color) {
+        auto array = sio::array_message::create();
+        array->get_vector().push_back(sio::int_message::create(color.r));
+        array->get_vector().push_back(sio::int_message::create(color.g));
+        array->get_vector().push_back(sio::int_message::create(color.b));
+        return array;
+    };
+    object->get_map()["col1"] = colorArray(self->m_pPlayer1->m_playerColor1);
+    object->get_map()["col2"] = colorArray(self->m_pPlayer1->m_playerColor2);
+    object->get_map()["glow"] = sio::bool_message::create(gm->getPlayerGlow());
+
     current_socket->emit("update", object);
-    return result;
+    if (dataQueue.empty() && leftQueue.empty()) return ret; // Will not process any events if it's empty.
+    processEvent(self);
+    return ret;
 }
 
 // Terminates the current socket connection and closes the thread.
+// Cleans up everything else.
 bool __fastcall PlayLayer::hookExit(gd::PlayLayer* self) {
     bool result = exit(self);
     // Stop the hThread
@@ -255,12 +460,31 @@ bool __fastcall PlayLayer::hookExit(gd::PlayLayer* self) {
             current_socket->close();
         }
         current_level_id = NULL;
+        dataQueue.swap(emptyQueue); // Swaps it to an empty queue. This is probably not efficient.
+        leftQueue.swap(emptyQueue); // Swaps it to an empty queue. This is probably not efficient.
         current_socket = sio::socket::ptr();
         connect_finish = false;
+        checkSocketEvents = true;
+        myTag = 0;
         TerminateThread(hThread, 0);
         CloseHandle(hThread);
         hThread = NULL;
         std::cout << "Thread closed" << std::endl;
     }
     return result;
+}
+
+// Pauses socket events from being added to the queue
+bool PauseLayer::hook(CCLayer* self) {
+
+    /*
+     *	    {"addr": "0xC50A8", "on": "B0 01 90 90 90", "off": "E8 7A CD 19 00"},
+		{"addr": "0xC54BA", "on": "B0 01 90 90 90", "off": "E8 68 C9 19 00"}
+     */
+    WriteProcessMemory(GetCurrentProcess(), reinterpret_cast<void*>(gd::base + 0xC50A8), "\xb0\x01\x90\x90\x90", 5, NULL);
+    WriteProcessMemory(GetCurrentProcess(), reinterpret_cast<void*>(gd::base + 0xC54BA), "\xb0\x01\x90\x90\x90", 5, NULL);
+    bool ret = init(self);
+    std::cout << "Pausing any socket events." << std::endl;
+    checkSocketEvents = false;
+    return ret;
 }

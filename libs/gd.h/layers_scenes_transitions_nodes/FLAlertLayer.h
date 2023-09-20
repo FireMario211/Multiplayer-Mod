@@ -10,7 +10,7 @@ namespace gd {
 	class ScrollingLayer;
 
 	#pragma runtime_checks("s", off)
-	class FLAlertLayer : public cocos2d::CCLayerColor {
+	class GDH_DLL FLAlertLayer : public cocos2d::CCLayerColor {
 	public:
 		cocos2d::CCMenu* m_pButtonMenu;	// 0x198
 		int m_nControlConnected; //?
@@ -27,6 +27,11 @@ namespace gd {
 		int m_nJoystickConnected;	// 0x1c4
 		bool m_bScrollable; // 0x1c8
 		bool m_bNoAction; //?
+
+		virtual ~FLAlertLayer() {
+			// recreate destructor
+			cocos2d::CCDirector::sharedDirector()->getTouchDispatcher()->decrementForcePrio(2);
+		}
 
 	public:
 		//CCNode vtable

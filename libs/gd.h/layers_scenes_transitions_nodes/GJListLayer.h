@@ -5,9 +5,9 @@
 
 namespace gd {
 	#pragma runtime_checks("s", off)
-	class GJListLayer : public cocos2d::CCLayerColor {
-	protected:
-		BoomListView* m_pTarget;
+	class GDH_DLL GJListLayer : public cocos2d::CCLayerColor {
+	public:
+		BoomListView* m_pListView;
 
 	public:
 		static GJListLayer* create(

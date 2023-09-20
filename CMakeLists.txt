@@ -6,9 +6,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(PROJECT_NAME Multiplayer) # change this
 project(${PROJECT_NAME})
 
-find_file(WINDOWS_HEADER windows.h)
-if(NOT WINDOWS_HEADER)
-  message(FATAL_ERROR "Can't find windows.h!")
+add_definitions(-DCURL_STATICLIB)
+if (NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+  find_file(WINDOWS_HEADER windows.h) # for some reason it checks for Windows.h and not windows.h
+  if(NOT WINDOWS_HEADER)
+    message(FATAL_ERROR "Can't find windows.h!")
+  endif()
 endif()
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
@@ -27,18 +30,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   libs/cocos-headers/extensions/
   libs/socket.io-client-cpp
   libs/socket.io-client-cpp/src
-  #libs/pthreads
-  #libs/pthreads/include
-  
 )
 
 add_subdirectory(libs/socket.io-client-cpp)
 
 add_subdirectory(libs/minhook)
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 target_link_libraries(${PROJECT_NAME} minhook sioclient)
-
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
 target_link_libraries(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/libs/cocos-headers/cocos2dx/libcocos2d.lib)
 # not needed most of the time
 target_link_libraries(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/libs/cocos-headers/extensions/libExtensions.lib)
-#target_link_libraries(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/libs/pthreads/lib/pthreadVC3.lib)

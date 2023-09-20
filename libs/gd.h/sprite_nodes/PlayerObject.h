@@ -12,13 +12,13 @@ namespace gd {
 	class HardStreak;
 	class GhostTrailEffect;
 
-	class PlayerObject : public GameObject, public AnimatedSpriteDelegate {
+	class GDH_DLL PlayerObject : public GameObject, public AnimatedSpriteDelegate {
 	public:
-		PAD(20);
+		PAD(20); // 24
 		bool unk480;
 		cocos2d::CCNode* unk484;
-		cocos2d::CCDictionary* unk488;
-		cocos2d::CCDictionary* unk48C;
+		cocos2d::CCDictionary* m_pCollisionLog; // 0x488
+		cocos2d::CCDictionary* m_pCollisionLog1; // 0x48C
 		PAD(32);
 		bool unk4B0;
 		cocos2d::CCSprite* unk4B4;
@@ -29,22 +29,22 @@ namespace gd {
 		bool m_isHidden; // 0x4DD
 		int m_hasGhostTrail; // 0x4E0
 		GhostTrailEffect* m_ghostTrail; // 0x4E4
-		cocos2d::CCSprite* unk4E8;
-		cocos2d::CCSprite* unk4EC;
-		cocos2d::CCSprite* unk4F0;
-		cocos2d::CCSprite* unk4F4;
-		cocos2d::CCSprite* unk4F8;
-		cocos2d::CCSprite* unk4FC;
+		cocos2d::CCSprite* m_pIconSprite;
+		cocos2d::CCSprite* m_pIconSpriteSecondary;
+		cocos2d::CCSprite* m_pIconSpriteWhitener;
+		cocos2d::CCSprite* m_pIconGlow;
+		cocos2d::CCSprite* m_pVehicleSprite;
+		cocos2d::CCSprite* m_pVehicleSpriteSecondary;
 		cocos2d::CCSprite* unk500;
-		cocos2d::CCSprite* unk504;
-		cocos2d::CCSprite* unk508;
+		cocos2d::CCSprite* m_pVehicleSpriteWhitener;
+		cocos2d::CCSprite* m_pVehicleGlow;
 		cocos2d::CCSprite* unk50C;
 		cocos2d::CCMotionStreak* m_regularTrail; // 0x510
 		HardStreak* m_waveTrail; // 0x514
 		double m_xAccel; // 0x518
 		double m_jumpAccel; // 0x520
 		double m_gravity; // 0x528
-		PAD(8);
+		PAD(8); // 16
 		bool unk538;
 		bool unk539;
 		bool unk53A;
@@ -61,8 +61,8 @@ namespace gd {
 		PAD(20);
 		GameObject* unk59C;
 		PAD(8);
-		GJRobotSprite* unk5A8;
-		GJSpiderSprite* unk5AC;
+		GJRobotSprite* m_pRobot; //0x5A8
+		GJSpiderSprite* m_pSpider; //0x5AC
 		bool unk5B0;
 		cocos2d::CCParticleSystemQuad* unk5B4;
 		cocos2d::CCParticleSystemQuad* unk5B8;
@@ -112,15 +112,18 @@ namespace gd {
 		cocos2d::CCLayer* unk65C;
 		bool m_isSliding; // 0x660
 		bool m_isRising; // 0x661
+		bool unk662;
 		cocos2d::CCPoint m_lastGroundedPos; // 0x664
 		cocos2d::CCArray* m_touchingRings; // 0x66C
 		GameObject* m_lastActivatedPortal; // 0x670
 		bool unk674;
-		PAD(7);
-		cocos2d::CCPoint m_position; // 0x67C
-		bool unk684;
-		bool unk685;
-		double unk688;
+        bool unk675;
+        cocos2d::ccColor3B m_playerColor1; // why wasnt this here before
+        cocos2d::ccColor3B m_playerColor2;
+        cocos2d::CCPoint m_position;
+        bool m_unk684;
+        bool m_unk685;
+        double m_unk688;
 		PAD(8);
 		float m_groundHeight; // 0x698
 		float unk69C; // seems to be y vel, cant directly change it though

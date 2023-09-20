@@ -1,6 +1,9 @@
 server/node_modules
 .vscode
 build/
+build-linux/
 libs/pthreads
 old.cpp
 libs/socket.io-client-cpp
+compile_commands.json
+build.sh

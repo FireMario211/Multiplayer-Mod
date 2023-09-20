@@ -45,7 +45,9 @@ NS_CC_BEGIN
 
 RT_ADD(
     typedef enum {
-
+        kCCObjectTypePlayLayer = 5,
+        kCCObjectTypeLevelEditorLayer = 6,
+        kCCObjectTypeMenuLayer = 15,
     } CCObjectType;
 )
 
@@ -84,7 +86,7 @@ protected:
 
     RT_ADD(
         int m_eObjType;
-        int m_nUnknown;
+        unsigned int m_uObjectIdxInArray;
     )
 public:
     CCObject(void);

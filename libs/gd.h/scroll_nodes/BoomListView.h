@@ -31,8 +31,8 @@ namespace gd {
 		kBoomListTypeArtist		    = 0x14,
 	};
 
-	class BoomListView : public cocos2d::CCLayer, public TableViewDelegate, public TableViewDataSource {
-	protected:
+	class GDH_DLL BoomListView : public cocos2d::CCLayer, public TableViewDelegate, public TableViewDataSource {
+	public:
 		TableView* m_pTableView;		// 0x124
 		cocos2d::CCArray* m_pEntries;	// 0x128
 		BoomListType m_eType; 			// 0x12c
@@ -60,6 +60,10 @@ namespace gd {
 			return reinterpret_cast<TableViewCell* (__thiscall*)(char*, CCIndexPath&, TableView*)>(
 				base + 0x10E70
 			)(reinterpret_cast<char*>(this) + 0x120, path, view);
+		}
+
+		virtual ~BoomListView() {
+			CC_SAFE_RELEASE(m_pEntries);
 		}
 		
 		bool init(cocos2d::CCArray* entries, BoomListType btype, float width, float height) {

@@ -11,11 +11,12 @@ namespace cocos2d {
 
 namespace gd {
 	#pragma runtime_checks("s", off)
-	class ButtonSprite : public cocos2d::CCSprite {
+	class GDH_DLL ButtonSprite : public cocos2d::CCSprite {
 		public:
 			PAD(24)
 			cocos2d::CCLabelBMFont* m_pLabel; // 0x1fc
-			PAD(8)
+			cocos2d::CCSprite* m_pSubSprite;	// 0x200
+			cocos2d::CCSprite* m_pSubBGSprite;  // 0x204
 			cocos2d::extension::CCScale9Sprite* m_pBGSprite;	// 0x208
 			PAD(8)
 			cocos2d::CCPoint m_obSpritePosition;	// 0x214
