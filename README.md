@@ -1,6 +1,7 @@
 # GD Multiplayer Mod
 A mod that allows you to play with other users on the same Geometry Dash level.
 <p align="center"><img src="./screenshots/Screenshot_1.png?raw=true" alt="Mod Example"/></p> 
+
 ## NOTICE
 There are **most likely** some bugs in this mod that I have yet to fix. You can report them in issues if you find any.
 Also another note, there isn't a "DLL" provided as I do not have a socket server to run off of. This may change in the future.
