@@ -4,19 +4,27 @@ A mod that allows you to play with other users on the same Geometry Dash level.
 
 ## NOTICE
 There are **most likely** some bugs in this mod that I have yet to fix. You can report them in issues if you find any.
-Also another note, there isn't a "DLL" provided as I do not have a socket server to run off of. This may change in the future.
+
+## Features
+* **Real-Time Multiplayer**
+  * See players on screen in real time!
+* **No Player Limit**
+  * Depending on whether or not you want a player limit, by default there is none!
+* **Self-Hostable**
+  * You are able to run your own multiplayer server!
 
 ## Installation
 To download this mod, you can download it from the Releases page, do note that it'll automatically try connecting to `localhost`, meaning it will only work on your machine, and no one else can connect to it (Unless you setup a bridge/proxy).
 ## Building
 
-To build this project, you must have the following installed:
+To build this project, you must have the following prerequisites installed:
 - [CMake](https://cmake.org/) [Version 3.0.0+]
 - [Visual Studio Build Tools (MSVC)](https://visualstudio.microsoft.com/downloads/)
 - [Node.JS](https://nodejs.org) - Optional but required for running the socket server
-Also be sure to have the libraries installed under this section.
 
-After all of that, you can simply build the project using CMake as x86 Release, then you should see `Multiplayer.dll` in the `builds/Release` folder (or a different build folder depending on where you set the build directory to)
+After installing these, you can simply build the project using CMake as `x86 Release`, then you should see `Multiplayer.dll` in the `builds/Release` folder (or a different build folder depending on where you set the build directory to)
+
+Additionally, be sure you have the required libraries installed as specified below. 
 ## Mod Libraries
 - [gd.h](https://github.com/HJfod/gd.h/tree/90f21108faea2b6f3d9756f458a5f8a5a421ab6d) - This was modified manually to add new fields.
 - [cocos-headers](https://github.com/HJfod/cocos-headers/tree/01436c6fec5bc0a42a2d75b188c40895eee8b60a)
@@ -30,7 +38,7 @@ After all of that, you can simply build the project using CMake as x86 Release, 
 To run the server, you first will need to install the modules it requires, though you should be able to execute these commands to install it, assuming you have Node.JS installed already
 ```
 cd server
-npm i
+npm install
 ```
 After installing the packages, you can run the server using `node .` or `node index.js`.
 
