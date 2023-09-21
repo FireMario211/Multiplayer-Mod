@@ -476,13 +476,6 @@ bool __fastcall PlayLayer::hookExit(gd::PlayLayer* self) {
 
 // Pauses socket events from being added to the queue
 bool PauseLayer::hook(CCLayer* self) {
-
-    /*
-     *	    {"addr": "0xC50A8", "on": "B0 01 90 90 90", "off": "E8 7A CD 19 00"},
-		{"addr": "0xC54BA", "on": "B0 01 90 90 90", "off": "E8 68 C9 19 00"}
-     */
-    WriteProcessMemory(GetCurrentProcess(), reinterpret_cast<void*>(gd::base + 0xC50A8), "\xb0\x01\x90\x90\x90", 5, NULL);
-    WriteProcessMemory(GetCurrentProcess(), reinterpret_cast<void*>(gd::base + 0xC54BA), "\xb0\x01\x90\x90\x90", 5, NULL);
     bool ret = init(self);
     std::cout << "Pausing any socket events." << std::endl;
     checkSocketEvents = false;
