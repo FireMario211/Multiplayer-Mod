@@ -157,6 +157,8 @@ void updatePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
     auto col2 = data->get_map()["col2"]->get_vector();
     bool glow = data->get_map()["glow"]->get_bool();
 
+    std::string username = data->get_map()["username"]->get_string();
+
     int iconFrame = 1;
     switch (gamemodeID) {
         case 0: // cube
@@ -247,9 +249,12 @@ void updatePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
         CCNode* playersObj = CCNode::create();
         playersObj->setTag(tag);
         gd::SimplePlayer* player = gd::SimplePlayer::create(iconFrame);
-        auto userNameID = CCLabelBMFont::create(std::to_string(tag).c_str(), "bigFont.fnt");
+        /*auto userNameID = CCLabelBMFont::create(std::to_string(tag).c_str(), "bigFont.fnt");
         userNameID->setScale(0.5F);
-        userNameID->setPositionY(20.0F);
+        userNameID->setPositionY(20.0F);*/
+        auto userName = CCLabelBMFont::create(username.c_str(), "bigFont.fnt");
+        userName->setScale(0.5F);
+        userName->setPositionY(26.0F);
         player->updatePlayerFrame(iconFrame, intToEnum(gamemodeID));
 
         auto smallerPlayer = gd::SimplePlayer::create(1);
@@ -284,7 +289,8 @@ void updatePlayer(gd::PlayLayer* self, sio::message::ptr const& data) {
         if (flipped) {
             player->setScaleY(-player->getScaleX());
         }
-        playersObj->addChild(userNameID);
+        //playersObj->addChild(userNameID);
+        playersObj->addChild(userName);
         
         playersNode->addChild(playersObj);
         // probably will switch to a switch statement later on
@@ -442,6 +448,9 @@ bool __fastcall PlayLayer::hookUpdate(gd::PlayLayer* self, float dt) {
     object->get_map()["col1"] = colorArray(self->m_pPlayer1->m_playerColor1);
     object->get_map()["col2"] = colorArray(self->m_pPlayer1->m_playerColor2);
     object->get_map()["glow"] = sio::bool_message::create(gm->getPlayerGlow());
+
+    // Player information
+    object->get_map()["username"] = sio::string_message::create(gm->m_sPlayerName);
 
     current_socket->emit("update", object);
     if (dataQueue.empty() && leftQueue.empty()) return ret; // Will not process any events if it's empty.
