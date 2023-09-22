@@ -31,6 +31,13 @@ Additionally, be sure you have the required libraries installed as specified bel
 - [MinHook](https://github.com/TsudaKageyu/minhook/tree/4a455528f61b5a375b1f9d44e7d296d47f18bb18)
 - [Socket.IO Client CPP](https://github.com/socketio/socket.io-client-cpp)
 
+**Additional Notes:** By default if you clone this repository, the `socket.io-client-cpp` library is not provided in the libs folder. You must also clone the repository by running these commands:
+```
+cd libs
+git clone --recurse-submodules https://github.com/socketio/socket.io-client-cpp
+```
+This will allow you to compile the mod with the socket.io-client-cpp library as well.
+
 ## Server Libraries
 - [Socket.IO](https://www.npmjs.com/package/socket.io)
 
