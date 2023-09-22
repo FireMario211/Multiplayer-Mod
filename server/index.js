@@ -29,6 +29,7 @@ let playerTemplate = {
     col1: [Number, Number, Number], // RGB
     col2: [Number, Number, Number], // RGB
     glow: Boolean, // Level ID
+    username: String, // Username
     level: Number,
     lastFrame: Number
 }
@@ -92,6 +93,7 @@ sio.on('connection', socket => {
             col1: [255, 255, 255],
             col2: [255, 255, 255],
             glow: 0,
+            username: "",
             level,
             lastFrame: 0
         }
@@ -146,6 +148,8 @@ sio.on('connection', socket => {
             player.col1 = pos.col1;
             player.col2 = pos.col2;
             player.glow = pos.glow;
+
+            player.username = pos.username;
             // icon
             curr_players.filter(p => p.id != socket.id).forEach(function (other_player) {
                 //if (calculateDistance(other_player.x, other_player.y, player.x, player.y) <= render_distance) {
