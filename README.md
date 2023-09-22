@@ -43,7 +43,6 @@ npm install
 After installing the packages, you can run the server using `node .` or `node index.js`.
 
 ## TODO (For me and contributers)
-- Implement Usernames instead of tags
 - ~~Stop people from crashing other players~~
 - Migrate to Geode
 - Add smooth interpolation using SimplePlayer
